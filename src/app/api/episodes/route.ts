@@ -126,17 +126,9 @@ export async function POST(request: Request) {
     timeZone: "Europe/London",
   })}`;
   const trimmedBrief = brief.replace(/\s+/g, " ").trim();
-  const rundown =
-    script?.split(/\n+/).filter(Boolean) ??
-    (await draftEpisodeRundown({
-      brief: trimmedBrief,
-      hosts,
-      lengthCap,
-      musicVibe,
-      source,
-      sourceUrl,
-    }));
-  const playableScript = script ?? [title, ...rundown].join("\n\n");
+  const biteCount = Math.max(1, trimmedBrief.match(/\bBite\s+\d+:/gi)?.length ?? 1);
+  const queuedRundown = ["Fetching the source and drafting the episode."];
+  const queuedScript = script ?? [title, ...queuedRundown].join("\n\n");
   const audioProvider = hasElevenLabsConfig() ? "elevenlabs" : "mock";
   const archiveProvider = hasSupabaseBrowserConfig() ? "supabase" : "unconfigured";
 
@@ -193,8 +185,8 @@ export async function POST(request: Request) {
     length_cap: lengthCap ?? "brief",
     music_vibe: musicVibe ?? "mist",
     public_id: id,
-    rundown,
-    script: playableScript,
+    rundown: queuedRundown,
+    script: queuedScript,
     slug,
     source,
     source_url: sourceUrl,
@@ -217,23 +209,46 @@ export async function POST(request: Request) {
   }
 
   after(async () => {
-    const audioUrl = await composeAndStoreEpisodeAudio({
-      episodeId: id,
-      musicPrompt,
-      rundown,
-      title,
-      voiceIds: voiceIds ?? (voiceId ? [voiceId, voiceId] : undefined),
-    });
     const writeClient = getSupabaseAdminClient() ?? supabase;
 
-    await writeClient
-      .from("episodes")
-      .update({
-        audio_url: audioUrl,
-        status: audioUrl ? "ready" : "failed",
-        updated_at: new Date().toISOString(),
-      })
-      .eq("public_id", id);
+    try {
+      const rundown =
+        script?.split(/\n+/).filter(Boolean) ??
+        (await draftEpisodeRundown({
+          brief: trimmedBrief,
+          hosts,
+          lengthCap,
+          musicVibe,
+          source,
+          sourceUrl,
+        }));
+      const playableScript = script ?? [title, ...rundown].join("\n\n");
+      const audioUrl = await composeAndStoreEpisodeAudio({
+        episodeId: id,
+        biteCount,
+        musicPrompt,
+        rundown,
+        title,
+        voiceIds: voiceIds ?? (voiceId ? [voiceId, voiceId] : undefined),
+      });
+
+      await writeClient
+        .from("episodes")
+        .update({
+          audio_url: audioUrl,
+          rundown,
+          script: playableScript,
+          status: audioUrl ? "ready" : "failed",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("public_id", id);
+    } catch (error) {
+      console.error("Episode render pipeline failed", error);
+      await writeClient
+        .from("episodes")
+        .update({ status: "failed", updated_at: new Date().toISOString() })
+        .eq("public_id", id);
+    }
   });
 
   return NextResponse.json({
@@ -243,7 +258,7 @@ export async function POST(request: Request) {
     musicReady: hasElevenLabsConfig(),
     episodeId: id,
     publicId: makePublic ? id : null,
-    rundown,
+    rundown: queuedRundown,
     slug,
     status: "generating",
     title,
@@ -258,12 +273,14 @@ function lengthLabel(lengthCap?: string | null) {
 }
 
 async function composeAndStoreEpisodeAudio({
+  biteCount,
   episodeId,
   musicPrompt,
   rundown,
   title,
   voiceIds,
 }: {
+  biteCount: number;
   episodeId: string;
   musicPrompt?: string;
   rundown: string[];
@@ -280,7 +297,10 @@ async function composeAndStoreEpisodeAudio({
 
     if (music) clips.push(music);
 
-    for (const [index, line] of [title, ...rundown].entries()) {
+    const spokenLines = [title, ...rundown];
+    const linesPerBite = Math.ceil(spokenLines.length / biteCount);
+
+    for (const [index, line] of spokenLines.entries()) {
       const speech = await generateSpeechBuffer({
         text: line,
         voiceId: voiceIds[index % 2] ?? voiceIds[0],
@@ -288,7 +308,12 @@ async function composeAndStoreEpisodeAudio({
 
       if (speech) {
         clips.push(speech);
-        if (music && index < rundown.length) clips.push(music);
+        const finishedBite = (index + 1) % linesPerBite === 0;
+        const hasNextBite = index < spokenLines.length - 1;
+
+        if (music && biteCount > 1 && finishedBite && hasNextBite) {
+          clips.push(music);
+        }
       }
     }
 
