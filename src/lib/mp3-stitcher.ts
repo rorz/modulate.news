@@ -3,6 +3,7 @@ import { existsSync } from "node:fs";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import ffmpegInstaller from "@ffmpeg-installer/ffmpeg";
 import ffmpegPath from "ffmpeg-static";
 
 export async function stitchMp3Clips(clips: Buffer[]) {
@@ -56,6 +57,7 @@ export async function stitchMp3Clips(clips: Buffer[]) {
 function resolveFfmpegPath() {
   const candidates = [
     process.env.FFMPEG_BIN,
+    ffmpegInstaller.path,
     ffmpegPath,
     "/opt/homebrew/bin/ffmpeg",
     "/usr/local/bin/ffmpeg",
