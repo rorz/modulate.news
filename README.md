@@ -1,59 +1,91 @@
+<p align="center">
+  <img src="./public/modulate-wordmark.svg" alt="Modulate" width="260" />
+</p>
+
 # Modulate
 
-Mobile-first podcast briefings from anything: Slack, Hacker News, Luma, pasted
-notes, URLs, transcripts, and research.
+Turn anything worth reading into a short, hosted audio briefing.
 
-The prototype uses Next.js 16, Bun, Supabase SSR/Auth plumbing, ElevenLabs voice
-and music hooks, Knip, pokayoke, and Vercel-ready defaults.
+Modulate is a mobile-first podcast studio for daily information: Hacker News,
+URLs, Luma events, and soon Slack. Pick a music identity, choose two
+ElevenLabs voices, add one or more bites, and Modulate renders a private MP3 to
+Vercel Blob. Episodes stay private until the user explicitly makes them public.
 
-## Setup
+Built in public with Next.js, Vercel, Supabase, ElevenLabs, Bun, Knip, and
+pokayoke.
+
+## What Works
+
+- Email/password auth with Supabase
+- Account usernames for `username.modulate.news`
+- Private episodes by default
+- Public share paths at `/e/<id>` and `/u/<username>/e/<id>`
+- Hacker News, URL, and Luma-style bites
+- ElevenLabs default voice discovery and preview clips
+- ElevenLabs Music API intro generation
+- Full MP3 render uploaded to private Vercel Blob storage
+- Auth-aware audio proxy for private playback
+- Loading, ready, and failed render states in the episode library
+- Public-repo checks for secret safety
+
+## Stack
+
+- **Vercel**: Next.js 16, App Router, Proxy/Middleware, Blob
+- **Codex**: rapid product build loop, pokayoke guardrails, repo checks
+- **Supabase**: Auth, Postgres, RLS-backed private/public episode data
+- **ElevenLabs**: default voices, speech synthesis, Music API jingles
+- **Bun**: package manager and local scripts
+
+## Local Setup
 
 ```sh
 bun install
 cp .env.example .env.local
 ```
 
-The prototype runs without credentials. On the splash screen, choose a username
-and click **Sign up or Log in**. Until Supabase is configured, auth runs in mock
-mode and keeps you moving locally.
+Fill `.env.local`:
 
-Fill the Supabase and ElevenLabs values in `.env.local` when you want real auth,
-episode persistence, and generation. Keep `.env.local` private.
+```txt
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=
+SUPABASE_SERVICE_ROLE_KEY=
+SUPABASE_DB_URL=
+ELEVENLABS_API_KEY=
+BLOB_READ_WRITE_TOKEN=
+```
 
-## Scripts
+`SUPABASE_DB_URL` is only needed for applying migrations from your machine. If
+your password contains reserved URL characters such as `@`, percent-encode them.
+
+Run migrations:
+
+```sh
+supabase db push --db-url "$SUPABASE_DB_URL"
+```
+
+Start the app:
 
 ```sh
 bun run dev
-bun run check
 ```
 
 Open `http://localhost:3000`.
 
-`bun run check` runs TypeScript, ESLint, Knip, Bun tests, pokayoke, and a
-production Next build.
-
-## Supabase
-
-The initial schema lives in `supabase/migrations`. Episodes are public-readable
-and authenticated users can create drafts.
-
-For a real local Supabase flow:
+## Verification
 
 ```sh
-supabase start
-supabase db reset
+bun run check
 ```
 
-Then copy the local API URL and anon key into `.env.local` as
-`NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
+This runs TypeScript, ESLint, Knip, Bun tests, pokayoke, and a production Next
+build.
 
-## ElevenLabs
+## Notes
 
-Server-side hooks are in `src/lib/elevenlabs.ts`. The prototype returns mock
-audio state without credentials and switches to ElevenLabs once
-`ELEVENLABS_API_KEY` is present.
+The Blob store can stay private. Modulate stores the private Blob pathname in
+Supabase and streams audio through `/api/episodes/:id/audio` after checking the
+episode row and current user.
 
-## Deploy
-
-Import the public repo into Vercel, set the environment variables, and deploy.
-No secrets should be committed.
+The Zalando font fallback warning during build is harmless for the prototype:
+Next cannot infer fallback override metrics for those local font names, but the
+build still completes.

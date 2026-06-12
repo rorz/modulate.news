@@ -1,3 +1,5 @@
+import { spawnSync } from "node:child_process";
+
 import type { Rule } from "pokayoke";
 
 const allowedEnvFiles = new Set([".env.example"]);
@@ -15,7 +17,7 @@ export const publicRepoSafety: Rule = {
     const envFiles = await context.glob([".env", ".env.*"]);
 
     for (const file of envFiles) {
-      if (!allowedEnvFiles.has(file)) {
+      if (!allowedEnvFiles.has(file) && !isGitIgnored(context.root, file)) {
         findings.push({
           ruleId: "repo/public-repo-safety",
           severity: "error" as const,
@@ -43,3 +45,12 @@ export const publicRepoSafety: Rule = {
     return { findings };
   },
 };
+
+function isGitIgnored(root: string, file: string) {
+  const result = spawnSync("git", ["check-ignore", "-q", file], {
+    cwd: root,
+    stdio: "ignore",
+  });
+
+  return result.status === 0;
+}

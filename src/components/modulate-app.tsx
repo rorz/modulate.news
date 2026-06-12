@@ -1,22 +1,19 @@
 "use client";
 
-import {
-  ArrowSquareOutIcon,
-  CheckCircleIcon,
-  CopyIcon,
-  PlusIcon,
-  RadioIcon,
-} from "@phosphor-icons/react";
-import Image from "next/image";
-import Link from "next/link";
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
 
-import { AuthPanel } from "@/components/auth-panel";
-import { PrismaticBurstBackground } from "@/components/backgrounds/prismatic-burst";
+import { AccountScreen } from "@/components/account-controls";
 import { EpisodeCreator } from "@/components/episode-creator";
+import { EpisodesScreen } from "@/components/episodes-screen";
+import { SignedInShell } from "@/components/signed-in-shell";
+import { SplashScreen } from "@/components/splash-screen";
+import { useVoiceOptions } from "@/components/use-voice-options";
 import {
-  type HostProfile,
-  hostProfiles,
+  type LocalEpisode as Episode,
+  mergeEpisodes,
+  readLocalEpisodes,
+} from "@/lib/local-episodes";
+import {
   type LengthCap,
   lengthCaps,
   type MusicVibe,
@@ -26,13 +23,12 @@ import {
 } from "@/lib/prototype-data";
 import { createPublicEpisodeId } from "@/lib/public-ids";
 
-type Screen = "splash" | "episodes" | "creator";
-type Episode = {
+type Screen = "splash" | "episodes" | "creator" | "account";
+type Bite = {
   id: string;
-  title: string;
-  source: string;
-  length: string;
-  url: string;
+  inputUrl: string;
+  lengthCap: LengthCap;
+  source: Source;
 };
 
 const defaultUrl = "https://news.ycombinator.com";
@@ -40,201 +36,310 @@ const defaultUrl = "https://news.ycombinator.com";
 export function ModulateApp() {
   const [screen, setScreen] = useState<Screen>("splash");
   const [profile, setProfile] = useState({ email: "", username: "" });
+  const [accountOpen, setAccountOpen] = useState(false);
+  const [accountUsername, setAccountUsername] = useState("");
+  const [accountMessage, setAccountMessage] = useState("");
+  const [savingAccount, setSavingAccount] = useState(false);
   const [episodes, setEpisodes] = useState<Episode[]>([]);
-  const [source, setSource] = useState<Source>(sources[1]);
-  const [inputUrl, setInputUrl] = useState(defaultUrl);
+  const [bites, setBites] = useState<Bite[]>([
+    {
+      id: crypto.randomUUID(),
+      inputUrl: defaultUrl,
+      lengthCap: lengthCaps[1],
+      source: sources[0],
+    },
+  ]);
   const [musicVibe, setMusicVibe] = useState<MusicVibe>(musicVibes[0]);
-  const [hostA, setHostA] = useState<HostProfile>(hostProfiles[0]);
-  const [hostB, setHostB] = useState<HostProfile>(hostProfiles[1]);
-  const [lengthCap, setLengthCap] = useState<LengthCap>(lengthCaps[1]);
+  const { hostA, hostB, setHostA, setHostB, voiceOptions } = useVoiceOptions();
+  const [makePublic, setMakePublic] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [checkingSession, setCheckingSession] = useState(true);
+  const [createError, setCreateError] = useState("");
+  const [episodesLoading, setEpisodesLoading] = useState(false);
 
   const publicBase = useMemo(
     () => (profile.username ? `https://${profile.username}.modulate.news` : ""),
     [profile.username],
   );
 
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadSession() {
+      try {
+        const response = await fetch("/api/auth/session");
+        const session = (await response.json()) as {
+          authenticated?: boolean;
+          email?: string;
+          username?: string;
+        };
+
+        if (!cancelled && session.authenticated) {
+          const username = session.username ?? "";
+          setProfile({ email: session.email ?? "", username });
+          setAccountUsername(username);
+          setScreen(username ? "episodes" : "account");
+        }
+      } finally {
+        if (!cancelled) {
+          setCheckingSession(false);
+        }
+      }
+    }
+
+    loadSession();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (screen !== "episodes" || !profile.email) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadEpisodes() {
+      setEpisodesLoading(true);
+      try {
+        const [serverEpisodes, localEpisodes] = await Promise.all([
+          fetch("/api/episodes").then(async (response) => {
+            if (!response.ok) return [];
+            const result = (await response.json()) as { episodes?: Episode[] };
+            return result.episodes ?? [];
+          }),
+          Promise.resolve(readLocalEpisodes(profile.email)),
+        ]);
+
+        if (!cancelled) {
+          setEpisodes(mergeEpisodes(serverEpisodes, localEpisodes));
+        }
+      } finally {
+        if (!cancelled) {
+          setEpisodesLoading(false);
+        }
+      }
+    }
+
+    loadEpisodes();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [profile.email, screen]);
+
+  useEffect(() => {
+    if (!profile.email || !episodes.some((episode) => episode.status === "generating")) {
+      return;
+    }
+
+    const interval = window.setInterval(async () => {
+      const response = await fetch("/api/episodes");
+
+      if (!response.ok) return;
+
+      const result = (await response.json()) as { episodes?: Episode[] };
+      setEpisodes((items) => mergeEpisodes(result.episodes ?? [], items));
+    }, 3000);
+
+    return () => window.clearInterval(interval);
+  }, [episodes, profile.email]);
+
+  function enterSignedInApp(nextProfile: { email: string; username: string }) {
+    setProfile(nextProfile);
+    setAccountUsername(nextProfile.username);
+    setScreen(nextProfile.username ? "episodes" : "account");
+  }
+
   async function createEpisode(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setCreating(true);
+    setCreateError("");
 
-    const id = createPublicEpisodeId();
-    const sourceLabel = source.id === "url" ? inputUrl : source.name;
+    const id = makePublic ? createPublicEpisodeId() : crypto.randomUUID();
+    const biteBrief = bites
+      .map((bite, index) => {
+        const sourceLabel = ["luma", "url"].includes(bite.source.id)
+          ? bite.inputUrl
+          : bite.source.name;
+        return `Bite ${index + 1}: ${sourceLabel}, ${bite.lengthCap.label} (${bite.lengthCap.cap}).`;
+      })
+      .join(" ");
 
     try {
-      await fetch("/api/episodes", {
+      const response = await fetch("/api/episodes", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          brief: `Create a ${lengthCap.label.toLowerCase()} episode from ${sourceLabel}. Music vibe: ${musicVibe.label
-            }. Hard cap: ${lengthCap.cap}.`,
+          brief: `Create an episode with these bites. ${biteBrief} Music vibe: ${musicVibe.label}.`,
           hosts: [`${hostA.label} (${hostA.accent})`, `${hostB.label} (${hostB.accent})`],
-          lengthCap: lengthCap.id,
+          lengthCap: bites[0]?.lengthCap.id ?? "brief",
+          musicPrompt: musicVibe.clipPrompts.intro,
           musicVibe: musicVibe.id,
-          publicId: id,
-          source: source.name,
-          sourceUrl: source.id === "url" ? inputUrl : undefined,
-          username: profile.username,
+          makePublic,
+          publicId: makePublic ? id : undefined,
+          source: bites.length === 1 ? bites[0].source.name : `${bites.length} bites`,
+          sourceUrl:
+            bites.length === 1 && ["luma", "url"].includes(bites[0].source.id)
+              ? bites[0].inputUrl
+              : undefined,
+          voiceId: hostA.id,
+          voiceIds: [hostA.id, hostB.id],
         }),
       });
-    } finally {
-      setEpisodes((items) => [
-        {
-          id,
-          title: `${source.name} ${lengthCap.label}`,
-          source: source.name,
-          length: lengthCap.cap,
-          url: `${publicBase}/e/${id}`,
-        },
-        ...items,
-      ]);
-      setCreating(false);
+
+      if (!response.ok) {
+        const result = (await response.json()) as { error?: string };
+        throw new Error(result.error ?? "Unable to create episode.");
+      }
+
+      const result = (await response.json()) as {
+        episodeId?: string;
+        audioUrl?: string | null;
+        publicId?: string | null;
+        rundown?: string[];
+        status?: string;
+        title?: string;
+      };
+      const script = [
+        result.title ?? "Modulate briefing",
+        ...(result.rundown ?? [
+          `${hostA.label} opens with ${bites[0]?.source.name ?? "the first bite"}.`,
+          `${hostB.label} adds context and closes the episode.`,
+        ]),
+      ].join("\n\n");
+      const nextEpisode = {
+        id: result.episodeId ?? id,
+        audioUrl: result.audioUrl,
+        isPublic: makePublic,
+        title:
+          result.title ??
+          `${bites.length} ${bites.length === 1 ? "Bite" : "Bites"} · ${new Date().toLocaleString(
+            "en-GB",
+            {
+              dateStyle: "medium",
+              timeStyle: "short",
+              timeZone: "Europe/London",
+            },
+          )}`,
+        source: bites.length === 1 ? bites[0].source.name : "Mixed sources",
+        length: bites.map((bite) => bite.lengthCap.cap).join(" + "),
+        script,
+        status: result.status ?? (result.audioUrl ? "ready" : "generating"),
+        url: makePublic ? `${publicBase}/e/${result.publicId ?? id}` : undefined,
+        voiceId: hostA.id,
+      };
+
+      setEpisodes((items) => mergeEpisodes([nextEpisode], items));
+      setMakePublic(false);
       setScreen("episodes");
+    } catch (error) {
+      setCreateError(error instanceof Error ? error.message : "Unable to create episode.");
+    } finally {
+      setCreating(false);
     }
   }
 
-  if (screen === "splash") {
+  async function saveAccount(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSavingAccount(true);
+    setAccountMessage("");
+
+    try {
+      const response = await fetch("/api/account", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ username: accountUsername }),
+      });
+      const result = (await response.json()) as {
+        email?: string;
+        error?: string;
+        username?: string;
+      };
+
+      if (!response.ok || !result.username) {
+        throw new Error(result.error ?? "Unable to save username.");
+      }
+
+      setProfile({ email: result.email ?? profile.email, username: result.username });
+      setAccountUsername(result.username);
+      setAccountMessage("Saved.");
+      setScreen("episodes");
+    } catch (error) {
+      setAccountMessage(error instanceof Error ? error.message : "Unable to save username.");
+    } finally {
+      setSavingAccount(false);
+    }
+  }
+
+  async function signOut() {
+    await fetch("/api/auth/sign-out", { method: "POST" });
+    setAccountOpen(false);
+    setProfile({ email: "", username: "" });
+    setEpisodes([]);
+    setScreen("splash");
+  }
+
+  if (checkingSession) {
     return (
-      <main className="relative min-h-screen overflow-hidden bg-white text-slate-950">
-        <PrismaticBurstBackground />
-        <div className="absolute inset-0 bg-white/62" aria-hidden="true" />
-        <Shell>
-          <div className="relative grid min-h-[calc(100vh-2rem)] place-items-center py-10">
-            <section className="w-full max-w-md">
-              <Brand />
-              <h1 className="font-heading mt-10 bg-gradient-to-tr from-mist-800 to-mist-600 bg-clip-text pb-1 text-5xl font-black leading-[1.04] text-transparent sm:text-6xl">
-                Podcasts from anything.
-              </h1>
-              <p className="mt-5 text-lg leading-8 text-slate-600">
-                Generate bulletins for the daily information you care about, at work or for fun.
-              </p>
-              <AuthPanel
-                onSuccess={(nextProfile) => {
-                  setProfile(nextProfile);
-                  setScreen("episodes");
-                }}
-              />
-            </section>
-          </div>
-        </Shell>
+      <main className="grid min-h-screen place-items-center bg-white text-sm font-semibold text-mist-700">
+        Modulate
       </main>
     );
   }
 
+  if (screen === "splash") {
+    return <SplashScreen onAuthenticated={enterSignedInApp} />;
+  }
+
   return (
-    <main className="min-h-screen bg-slate-50 text-slate-950">
-      <Shell>
-        <header className="flex items-center justify-between border-b border-slate-200 py-4">
-          <Brand />
-          <div className="text-right">
-            <p className="text-sm font-semibold">{profile.username}.modulate.news</p>
-            {profile.email ? <p className="text-xs text-slate-500">{profile.email}</p> : null}
-          </div>
-        </header>
-
-        {screen === "episodes" ? (
-          <section className="py-8">
-            <div className="flex items-end justify-between gap-4">
-              <div>
-                <p className="text-sm font-semibold uppercase text-mist-700">Library</p>
-                <h1 className="font-heading mt-2 text-4xl font-black">My Episodes</h1>
-              </div>
-              {episodes.length > 0 ? (
-                <button className="primary-button" onClick={() => setScreen("creator")}>
-                  <PlusIcon className="size-5" aria-hidden="true" />
-                  Create
-                </button>
-              ) : null}
-            </div>
-
-            {episodes.length === 0 ? (
-              <div className="mt-10 rounded-xs border border-dashed border-slate-300/80 bg-gradient-to-br from-white to-mist-50/80 p-6">
-                <div className="grid size-12 place-items-center rounded-xs bg-gradient-to-br from-mist-100 to-mist-200 text-mist-700">
-                  <RadioIcon className="size-6" aria-hidden="true" />
-                </div>
-                <h2 className="font-heading mt-6 text-2xl font-black">No episodes yet</h2>
-                <p className="mt-2 max-w-lg text-slate-600">
-                  Create your first public episode. You can start from an integration
-                  or paste a URL.
-                </p>
-                <button className="primary-button mt-6" onClick={() => setScreen("creator")}>
-                  <PlusIcon className="size-5" aria-hidden="true" />
-                  Create episode
-                </button>
-              </div>
-            ) : (
-              <div className="mt-6 grid gap-3">
-                {episodes.map((episode) => (
-                  <article
-                    className="rounded-xs border border-slate-200/90 bg-gradient-to-br from-white to-mist-50/75 p-4"
-                    key={episode.id}
-                  >
-                    <div className="flex items-start justify-between gap-4">
-                      <div>
-                        <p className="font-heading text-lg font-black">{episode.title}</p>
-                        <p className="mt-1 text-sm text-slate-500">
-                          {episode.source} · {episode.length} · /e/{episode.id}
-                        </p>
-                      </div>
-                      <CheckCircleIcon className="size-6 text-mist-700" weight="fill" />
-                    </div>
-                    <div className="mt-4 flex flex-wrap gap-2">
-                      <Link className="secondary-button" href={`/e/${episode.id}`}>
-                        <ArrowSquareOutIcon className="size-4" aria-hidden="true" />
-                        Open
-                      </Link>
-                      <button
-                        className="secondary-button"
-                        onClick={() => navigator.clipboard?.writeText(episode.url)}
-                      >
-                        <CopyIcon className="size-4" aria-hidden="true" />
-                        Copy share link
-                      </button>
-                    </div>
-                  </article>
-                ))}
-              </div>
-            )}
-          </section>
+    <SignedInShell
+      accountOpen={accountOpen}
+      profile={profile}
+      setAccountOpen={setAccountOpen}
+      onAccount={() => {
+        setAccountOpen(false);
+        setScreen("account");
+      }}
+      onHome={() => setScreen(profile.email ? "episodes" : "splash")}
+      onSignOut={signOut}
+    >
+        {screen === "account" ? (
+          <AccountScreen
+            accountMessage={accountMessage}
+            savingAccount={savingAccount}
+            username={accountUsername}
+            setUsername={setAccountUsername}
+            onBack={() => setScreen("episodes")}
+            onSave={saveAccount}
+          />
+        ) : screen === "episodes" ? (
+          <EpisodesScreen
+            episodes={episodes}
+            loading={episodesLoading}
+            onCreate={() => setScreen("creator")}
+          />
         ) : (
           <EpisodeCreator
             createEpisode={createEpisode}
+            createError={createError}
             creating={creating}
             hostA={hostA}
             hostB={hostB}
-            inputUrl={inputUrl}
-            lengthCap={lengthCap}
+            bites={bites}
+            makePublic={makePublic}
             musicVibe={musicVibe}
+            voiceOptions={voiceOptions}
+            setBites={setBites}
             setHostA={setHostA}
             setHostB={setHostB}
-            setInputUrl={setInputUrl}
-            setLengthCap={setLengthCap}
+            setMakePublic={setMakePublic}
             setMusicVibe={setMusicVibe}
             onBack={() => setScreen("episodes")}
-            setSource={setSource}
-            source={source}
           />
         )}
-      </Shell>
-    </main>
+    </SignedInShell>
   );
-}
-
-function Brand() {
-  return (
-    <div className="flex items-center gap-3">
-      <Image
-        alt="Modulate"
-        className="h-7 w-auto"
-        height={88}
-        priority
-        src="/modulate-wordmark.svg"
-        width={475}
-      />
-    </div>
-  );
-}
-
-function Shell({ children }: { children: React.ReactNode }) {
-  return <div className="mx-auto min-h-screen w-full max-w-5xl px-4 sm:px-6">{children}</div>;
 }

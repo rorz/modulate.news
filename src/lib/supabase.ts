@@ -1,9 +1,11 @@
 import { createServerClient } from "@supabase/ssr";
+import { createClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 
-import { env, hasSupabaseBrowserConfig } from "@/lib/env";
+import { env, getSupabaseBrowserKey, hasSupabaseBrowserConfig } from "@/lib/env";
 
 type SupabaseServerClient = ReturnType<typeof createServerClient>;
+type SupabaseAdminClient = ReturnType<typeof createClient>;
 
 export async function getSupabaseServerClient(): Promise<SupabaseServerClient | null> {
   if (!hasSupabaseBrowserConfig()) {
@@ -12,7 +14,7 @@ export async function getSupabaseServerClient(): Promise<SupabaseServerClient | 
 
   const cookieStore = await cookies();
 
-  return createServerClient(env.NEXT_PUBLIC_SUPABASE_URL!, env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+  return createServerClient(env.NEXT_PUBLIC_SUPABASE_URL!, getSupabaseBrowserKey()!, {
     cookies: {
       getAll() {
         return cookieStore.getAll();
@@ -26,6 +28,19 @@ export async function getSupabaseServerClient(): Promise<SupabaseServerClient | 
           // Server Components cannot write cookies. Route Handlers and Actions can.
         }
       },
+    },
+  });
+}
+
+export function getSupabaseAdminClient(): SupabaseAdminClient | null {
+  if (!env.NEXT_PUBLIC_SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) {
+    return null;
+  }
+
+  return createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false,
     },
   });
 }
