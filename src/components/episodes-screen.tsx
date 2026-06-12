@@ -30,14 +30,18 @@ export function EpisodesScreen({
   episodes,
   loading,
   onCreate,
+  onRetry,
 }: {
   episodes: Episode[];
   loading: boolean;
   onCreate: () => void;
+  onRetry: (episode: Episode) => Promise<void>;
 }) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [playingId, setPlayingId] = useState("");
   const [playError, setPlayError] = useState("");
+  const [retryError, setRetryError] = useState<{ id: string; message: string } | null>(null);
+  const [retryingId, setRetryingId] = useState("");
 
   async function playEpisode(episode: Episode) {
     setPlayError("");
@@ -58,6 +62,22 @@ export function EpisodesScreen({
     } catch (error) {
       setPlayError(error instanceof Error ? error.message : "Unable to play episode.");
       setPlayingId("");
+    }
+  }
+
+  async function retryEpisode(episode: Episode) {
+    setRetryError(null);
+    setRetryingId(episode.id);
+
+    try {
+      await onRetry(episode);
+    } catch (error) {
+      setRetryError({
+        id: episode.id,
+        message: error instanceof Error ? error.message : "Unable to retry episode.",
+      });
+    } finally {
+      setRetryingId("");
     }
   }
 
@@ -162,8 +182,21 @@ export function EpisodesScreen({
                     </button>
                   </>
                 ) : null}
+                {episode.status === "failed" ? (
+                  <button
+                    className="inline-flex min-h-10 items-center px-1 text-sm font-semibold text-mist-500 transition hover:text-mist-800 disabled:opacity-60"
+                    disabled={retryingId === episode.id}
+                    onClick={() => retryEpisode(episode)}
+                    type="button"
+                  >
+                    {retryingId === episode.id ? "Retrying..." : "Retry"}
+                  </button>
+                ) : null}
               </div>
               {playError ? <p className="mt-3 text-sm text-red-600">{playError}</p> : null}
+              {retryError?.id === episode.id ? (
+                <p className="mt-3 text-sm text-red-600">{retryError.message}</p>
+              ) : null}
             </article>
           ))}
         </div>

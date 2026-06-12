@@ -6,5 +6,5 @@
     ".pokayoke/rules/**/*.test.ts"
   ],
   "project": ["src/**/*.{ts,tsx}", ".pokayoke/rules/**/*.ts"],
-  "ignoreDependencies": ["tailwindcss"]
+  "ignoreDependencies": ["@ffmpeg-installer/ffmpeg", "tailwindcss"]
 }

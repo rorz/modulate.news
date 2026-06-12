@@ -8,6 +8,7 @@ import { EpisodesScreen } from "@/components/episodes-screen";
 import { SignedInShell } from "@/components/signed-in-shell";
 import { SplashScreen } from "@/components/splash-screen";
 import { useVoiceOptions } from "@/components/use-voice-options";
+import { retryFailedEpisode } from "@/lib/client-episode-actions";
 import {
   type LocalEpisode as Episode,
   mergeEpisodes,
@@ -320,6 +321,7 @@ export function ModulateApp() {
             episodes={episodes}
             loading={episodesLoading}
             onCreate={() => setScreen("creator")}
+            onRetry={(episode) => retryFailedEpisode(episode, setEpisodes)}
           />
         ) : (
           <EpisodeCreator

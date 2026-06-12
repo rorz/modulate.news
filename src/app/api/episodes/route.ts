@@ -1,11 +1,10 @@
-import { put } from "@vercel/blob";
 import { after, NextResponse } from "next/server";
 import { z } from "zod";
 
-import { generateMusicBuffer, generateSpeechBuffer, getElevenLabsClient } from "@/lib/elevenlabs";
+import { getElevenLabsClient } from "@/lib/elevenlabs";
+import { composeAndStoreEpisodeAudio } from "@/lib/episode-audio";
 import { draftEpisodeRundown } from "@/lib/episode-draft";
 import { hasBlobConfig, hasElevenLabsConfig, hasSupabaseBrowserConfig } from "@/lib/env";
-import { stitchMp3Clips } from "@/lib/mp3-stitcher";
 import { createPublicEpisodeId } from "@/lib/public-ids";
 import { getSupabaseAdminClient, getSupabaseServerClient } from "@/lib/supabase";
 
@@ -270,75 +269,6 @@ function lengthLabel(lengthCap?: string | null) {
   if (lengthCap === "bullet") return "1 min";
   if (lengthCap === "story") return "5 min";
   return "3 min";
-}
-
-async function composeAndStoreEpisodeAudio({
-  biteCount,
-  episodeId,
-  musicPrompt,
-  rundown,
-  title,
-  voiceIds,
-}: {
-  biteCount: number;
-  episodeId: string;
-  musicPrompt?: string;
-  rundown: string[];
-  title: string;
-  voiceIds?: string[];
-}) {
-  if (!musicPrompt || !voiceIds?.[0] || !voiceIds[1] || !hasElevenLabsConfig() || !hasBlobConfig()) {
-    return null;
-  }
-
-  try {
-    const clips: Buffer[] = [];
-    const music = await generateMusicBuffer(musicPrompt);
-
-    if (music) clips.push(music);
-
-    const spokenLines = [title, ...rundown];
-    const linesPerBite = Math.ceil(spokenLines.length / biteCount);
-
-    for (const [index, line] of spokenLines.entries()) {
-      const speech = await generateSpeechBuffer({
-        text: line,
-        voiceId: voiceIds[index % 2] ?? voiceIds[0],
-      });
-
-      if (speech) {
-        clips.push(speech);
-        const finishedBite = (index + 1) % linesPerBite === 0;
-        const hasNextBite = index < spokenLines.length - 1;
-
-        if (music && biteCount > 1 && finishedBite && hasNextBite) {
-          clips.push(music);
-        }
-      }
-    }
-
-    if (music) clips.push(music);
-    if (clips.length === 0) return null;
-
-    const episode = await stitchMp3Clips(clips);
-
-    const blob = await put(
-      `episodes/${episodeId}.mp3`,
-      new Blob([episode], {
-        type: "audio/mpeg",
-      }),
-      {
-        access: "private",
-        addRandomSuffix: false,
-        contentType: "audio/mpeg",
-      },
-    );
-
-    return blob.pathname;
-  } catch (error) {
-    console.error("Episode audio generation failed", error);
-    return null;
-  }
 }
 
 function isMissingTableError(error: { code?: string; message?: string }) {
