@@ -3,6 +3,7 @@ import { after, NextResponse } from "next/server";
 import { z } from "zod";
 
 import { generateMusicBuffer, generateSpeechBuffer, getElevenLabsClient } from "@/lib/elevenlabs";
+import { draftEpisodeRundown } from "@/lib/episode-draft";
 import { hasBlobConfig, hasElevenLabsConfig, hasSupabaseBrowserConfig } from "@/lib/env";
 import { stitchMp3Clips } from "@/lib/mp3-stitcher";
 import { createPublicEpisodeId } from "@/lib/public-ids";
@@ -125,7 +126,16 @@ export async function POST(request: Request) {
     timeZone: "Europe/London",
   })}`;
   const trimmedBrief = brief.replace(/\s+/g, " ").trim();
-  const rundown = buildRundown({ brief: trimmedBrief, hosts, lengthCap, musicVibe, source });
+  const rundown =
+    script?.split(/\n+/).filter(Boolean) ??
+    (await draftEpisodeRundown({
+      brief: trimmedBrief,
+      hosts,
+      lengthCap,
+      musicVibe,
+      source,
+      sourceUrl,
+    }));
   const playableScript = script ?? [title, ...rundown].join("\n\n");
   const audioProvider = hasElevenLabsConfig() ? "elevenlabs" : "mock";
   const archiveProvider = hasSupabaseBrowserConfig() ? "supabase" : "unconfigured";
@@ -304,32 +314,6 @@ async function composeAndStoreEpisodeAudio({
     console.error("Episode audio generation failed", error);
     return null;
   }
-}
-
-function buildRundown({
-  brief,
-  hosts,
-  lengthCap,
-  musicVibe,
-  source,
-}: {
-  brief: string;
-  hosts: string[];
-  lengthCap?: string;
-  musicVibe?: string;
-  source: string;
-}) {
-  const opener = `${hosts[0]} opens with the highest-signal ${source} item: ${brief.slice(
-    0,
-    132,
-  )}${brief.length > 132 ? "..." : ""}`;
-
-  return [
-    opener,
-    `${hosts[1]} adds context, names the practical consequence, and cuts anything that sounds like filler.`,
-    "Both hosts trade one useful disagreement so the listener gets judgment, not a pasteurized summary.",
-    `Close under the ${lengthCap ?? "brief"} cap with ${musicVibe ?? "mist"} intro music.`,
-  ];
 }
 
 function isMissingTableError(error: { code?: string; message?: string }) {

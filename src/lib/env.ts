@@ -10,6 +10,7 @@ const optionalUrl = z.preprocess(
 );
 
 const envSchema = z.object({
+  AI_GATEWAY_API_KEY: optionalString,
   BLOB_READ_WRITE_TOKEN: optionalString,
   ELEVENLABS_API_KEY: optionalString,
   ELEVENLABS_HOST_A_VOICE_ID: optionalString,
@@ -17,6 +18,7 @@ const envSchema = z.object({
   NEXT_PUBLIC_SUPABASE_ANON_KEY: optionalString,
   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: optionalString,
   NEXT_PUBLIC_SUPABASE_URL: optionalUrl,
+  OPENAI_API_KEY: optionalString,
   SUPABASE_SERVICE_ROLE_KEY: optionalString,
 });
 
