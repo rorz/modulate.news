@@ -1,0 +1,19 @@
+{
+  "format_on_save": "on",
+  "formatter": "language_server",
+  "tab_size": 2,
+  "languages": {
+    "TypeScript": {
+      "format_on_save": "on",
+      "formatter": "language_server"
+    },
+    "TSX": {
+      "format_on_save": "on",
+      "formatter": "language_server"
+    },
+    "JSON": {
+      "format_on_save": "on",
+      "formatter": "language_server"
+    }
+  }
+}

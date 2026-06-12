@@ -1,0 +1,10 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "entry": [
+    "src/app/**/page.tsx",
+    "src/app/**/route.ts",
+    ".pokayoke/rules/**/*.test.ts"
+  ],
+  "project": ["src/**/*.{ts,tsx}", ".pokayoke/rules/**/*.ts"],
+  "ignoreDependencies": ["tailwindcss"]
+}

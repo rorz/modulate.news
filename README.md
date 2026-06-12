@@ -1,36 +1,43 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Modulate
 
-## Getting Started
+Mobile-first podcast briefings from anything: Slack, Hacker News, Luma, pasted
+notes, URLs, transcripts, and research.
 
-First, run the development server:
+The prototype uses Next.js 16, Bun, Supabase SSR/Auth plumbing, ElevenLabs voice
+and music hooks, Knip, pokayoke, and Vercel-ready defaults.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## Setup
+
+```sh
+bun install
+cp .env.example .env.local
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Fill the Supabase and ElevenLabs values in `.env.local`. Keep `.env.local`
+private.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Scripts
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```sh
+bun run dev
+bun run check
+```
 
-## Learn More
+`bun run check` runs TypeScript, ESLint, Knip, Bun tests, pokayoke, and a
+production Next build.
 
-To learn more about Next.js, take a look at the following resources:
+## Supabase
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+The initial schema lives in `supabase/migrations`. Episodes are public-readable
+and authenticated users can create drafts.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## ElevenLabs
 
-## Deploy on Vercel
+Server-side hooks are in `src/lib/elevenlabs.ts`. The prototype returns mock
+audio state without credentials and switches to ElevenLabs once
+`ELEVENLABS_API_KEY` is present.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Deploy
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Import the public repo into Vercel, set the environment variables, and deploy.
+No secrets should be committed.

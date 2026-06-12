@@ -1,0 +1,17 @@
+[
+  {
+    "label": "check",
+    "command": "bun run check",
+    "use_new_terminal": false
+  },
+  {
+    "label": "dev",
+    "command": "bun run dev",
+    "use_new_terminal": true
+  },
+  {
+    "label": "build",
+    "command": "bun run build",
+    "use_new_terminal": false
+  }
+]

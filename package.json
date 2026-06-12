@@ -3,15 +3,25 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --turbopack",
     "build": "next build",
+    "check": "bun run typecheck && bun run lint && bun run knip && bun run test && bun run pokayoke && bun run build",
+    "knip": "knip",
+    "lint": "eslint",
+    "pokayoke": "pokayoke check",
     "start": "next start",
-    "lint": "eslint"
+    "test": "bun test ./.pokayoke/rules/public-repo-safety.test.ts",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@phosphor-icons/react": "^2.1.10",
+    "@supabase/ssr": "^0.12.0",
+    "@supabase/supabase-js": "^2.108.1",
+    "elevenlabs": "^1.59.0",
     "next": "16.2.9",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-dom": "19.2.4",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
@@ -21,6 +31,8 @@
     "babel-plugin-react-compiler": "1.0.0",
     "eslint": "^9",
     "eslint-config-next": "16.2.9",
+    "knip": "^6.16.1",
+    "pokayoke": "^0.0.5",
     "tailwindcss": "^4",
     "typescript": "^5"
   },

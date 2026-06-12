@@ -1,0 +1,30 @@
+{
+  "$schema": "https://pokayoke.dev/schema.json",
+  "extends": ["pokayoke/recommended"],
+  "localRules": [".pokayoke/rules/**/*.rule.ts"],
+  "files": [
+    ".env.example",
+    ".github/workflows/**/*.yml",
+    ".pokayoke/rules/**/*.ts",
+    ".zed/*.json",
+    "AGENTS.md",
+    "CLAUDE.md",
+    "README.md",
+    "knip.jsonc",
+    "next.config.ts",
+    "package.json",
+    "src/**/*.ts",
+    "src/**/*.tsx",
+    "supabase/**/*.sql"
+  ],
+  "ignores": ["**/node_modules/**", "**/dist/**", "**/*.d.ts"],
+  "suppressions": {
+    "directive": "pokayoke-ignore",
+    "requireReason": true,
+    "reportUnused": "warn"
+  },
+  "rules": {
+    "repo/public-repo-safety": "error",
+    "structure/max-file-lines": ["error", { "max": 350 }]
+  }
+}
