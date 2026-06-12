@@ -1,7 +1,7 @@
 "use client";
 
-import { EnvelopeSimpleIcon, SignInIcon } from "@phosphor-icons/react";
-import { FormEvent, useState } from "react";
+import { SignInIcon } from "@phosphor-icons/react";
+import { FormEvent, MouseEvent, useState } from "react";
 
 import { isValidUsername, normalizeUsername } from "@/lib/public-ids";
 
@@ -12,10 +12,9 @@ export function AuthPanel({
 }: {
   onSuccess: (profile: { email: string; username: string }) => void;
 }) {
-  const [email, setEmail] = useState("");
   const [username, setUsername] = useState("");
   const [state, setState] = useState<AuthState>("idle");
-  const [message, setMessage] = useState("Pick your public episode subdomain.");
+  const [message, setMessage] = useState("");
 
   const normalizedUsername = normalizeUsername(username);
   const usernameReady = isValidUsername(normalizedUsername);
@@ -35,7 +34,7 @@ export function AuthPanel({
       const response = await fetch("/api/auth/sign-in", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ email, username: normalizedUsername }),
+        body: JSON.stringify({ username: normalizedUsername }),
       });
       const result = (await response.json()) as { error?: string; message?: string };
 
@@ -45,57 +44,47 @@ export function AuthPanel({
 
       setMessage(result.message ?? "Signed in.");
       setState("sent");
-      onSuccess({ email, username: normalizedUsername });
+      onSuccess({ email: "", username: normalizedUsername });
     } catch (error) {
       setMessage(error instanceof Error ? error.message : "Unable to sign in.");
       setState("error");
     }
   }
 
+  function moveButtonGlow(event: MouseEvent<HTMLButtonElement>) {
+    const rect = event.currentTarget.getBoundingClientRect();
+    event.currentTarget.style.setProperty("--glow-x", `${event.clientX - rect.left}px`);
+    event.currentTarget.style.setProperty("--glow-y", `${event.clientY - rect.top}px`);
+  }
+
   return (
     <form className="mt-8 grid gap-3" onSubmit={signIn}>
       <label className="grid gap-2">
-        <span className="text-xs font-semibold uppercase text-slate-500">Username</span>
-        <div className="grid grid-cols-[1fr_auto] overflow-hidden rounded-md border border-slate-300 bg-white">
+        <span className="text-xs font-semibold uppercase text-slate-500">Get started</span>
+        <div className="grid grid-cols-[1fr_auto] overflow-hidden rounded-xs border border-slate-300/80 bg-gradient-to-br from-white to-mist-50/80 shadow-[inset_0_1px_0_rgb(255_255_255_/_0.88)] transition focus-within:border-mist-500/70 focus-within:shadow-[0_0_0_3px_rgb(92_122_145_/_0.10),inset_0_1px_0_rgb(255_255_255_/_0.88)]">
           <input
-            className="h-12 min-w-0 px-3 text-base text-slate-950 outline-none placeholder:text-slate-400"
+            className="h-12 min-w-0 bg-transparent px-3 text-base text-slate-950 outline-none placeholder:text-slate-400"
             onChange={(event) => setUsername(event.target.value)}
             placeholder="alex"
             value={username}
           />
-          <span className="flex items-center border-l border-slate-200 bg-slate-50 px-3 text-sm text-slate-500">
+          <span className="flex items-center border-l border-slate-200/90 bg-white/52 px-3 text-sm text-mist-600">
             .modulate.news
           </span>
         </div>
       </label>
 
-      <label className="grid gap-2">
-        <span className="text-xs font-semibold uppercase text-slate-500">Email</span>
-        <div className="grid grid-cols-[auto_1fr] items-center rounded-md border border-slate-300 bg-white px-3">
-          <EnvelopeSimpleIcon className="size-5 text-slate-400" aria-hidden="true" />
-          <input
-            className="h-12 min-w-0 px-3 text-base text-slate-950 outline-none placeholder:text-slate-400"
-            inputMode="email"
-            onChange={(event) => setEmail(event.target.value)}
-            placeholder="you@example.com"
-            type="email"
-            value={email}
-          />
-        </div>
-      </label>
-
       <button
-        className="mt-2 inline-flex h-12 items-center justify-center gap-2 rounded-md bg-sky-700 px-4 text-sm font-semibold text-white transition hover:bg-sky-800 disabled:cursor-not-allowed disabled:bg-slate-300"
-        disabled={state === "loading" || !email || !usernameReady}
+        className="primary-button mt-2 h-12 w-full"
+        disabled={state === "loading" || !usernameReady}
+        onMouseMove={moveButtonGlow}
         type="submit"
       >
         <SignInIcon className="size-5" aria-hidden="true" />
-        Log in
+        Sign up or Log in
       </button>
 
-      <p className={state === "error" ? "text-sm text-red-600" : "text-sm text-slate-500"}>
-        {message}
-      </p>
+      {state === "error" ? <p className="text-sm text-red-600">{message}</p> : null}
     </form>
   );
 }

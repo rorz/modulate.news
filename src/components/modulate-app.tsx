@@ -66,9 +66,8 @@ export function ModulateApp() {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          brief: `Create a ${lengthCap.label.toLowerCase()} episode from ${sourceLabel}. Music vibe: ${
-            musicVibe.label
-          }. Hard cap: ${lengthCap.cap}.`,
+          brief: `Create a ${lengthCap.label.toLowerCase()} episode from ${sourceLabel}. Music vibe: ${musicVibe.label
+            }. Hard cap: ${lengthCap.cap}.`,
           hosts: [`${hostA.label} (${hostA.accent})`, `${hostB.label} (${hostB.accent})`],
           lengthCap: lengthCap.id,
           musicVibe: musicVibe.id,
@@ -98,17 +97,16 @@ export function ModulateApp() {
     return (
       <main className="relative min-h-screen overflow-hidden bg-white text-slate-950">
         <PrismaticBurstBackground />
-        <div className="absolute inset-0 bg-white/42" aria-hidden="true" />
+        <div className="absolute inset-0 bg-white/62" aria-hidden="true" />
         <Shell>
           <div className="relative grid min-h-[calc(100vh-2rem)] place-items-center py-10">
             <section className="w-full max-w-md">
               <Brand />
-              <h1 className="font-heading mt-10 text-5xl font-black leading-none text-slate-950 sm:text-6xl">
-                Podcasts from whatever you read.
+              <h1 className="font-heading mt-10 bg-gradient-to-tr from-mist-800 to-mist-600 bg-clip-text pb-1 text-5xl font-black leading-[1.04] text-transparent sm:text-6xl">
+                Podcasts from anything.
               </h1>
               <p className="mt-5 text-lg leading-8 text-slate-600">
-                Connect a source, choose the sound, pick two hosts, and publish a
-                public share link on your own Modulate subdomain.
+                Generate bulletins for the daily information you care about, at work or for fun.
               </p>
               <AuthPanel
                 onSuccess={(nextProfile) => {
@@ -130,7 +128,7 @@ export function ModulateApp() {
           <Brand />
           <div className="text-right">
             <p className="text-sm font-semibold">{profile.username}.modulate.news</p>
-            <p className="text-xs text-slate-500">{profile.email}</p>
+            {profile.email ? <p className="text-xs text-slate-500">{profile.email}</p> : null}
           </div>
         </header>
 
@@ -138,7 +136,7 @@ export function ModulateApp() {
           <section className="py-8">
             <div className="flex items-end justify-between gap-4">
               <div>
-                <p className="text-sm font-semibold uppercase text-sky-700">Library</p>
+                <p className="text-sm font-semibold uppercase text-mist-700">Library</p>
                 <h1 className="font-heading mt-2 text-4xl font-black">My Episodes</h1>
               </div>
               {episodes.length > 0 ? (
@@ -150,8 +148,8 @@ export function ModulateApp() {
             </div>
 
             {episodes.length === 0 ? (
-              <div className="mt-10 rounded-lg border border-dashed border-slate-300 bg-white p-6">
-                <div className="grid size-12 place-items-center rounded-md bg-sky-100 text-sky-700">
+              <div className="mt-10 rounded-xs border border-dashed border-slate-300/80 bg-gradient-to-br from-white to-mist-50/80 p-6">
+                <div className="grid size-12 place-items-center rounded-xs bg-gradient-to-br from-mist-100 to-mist-200 text-mist-700">
                   <RadioIcon className="size-6" aria-hidden="true" />
                 </div>
                 <h2 className="font-heading mt-6 text-2xl font-black">No episodes yet</h2>
@@ -168,7 +166,7 @@ export function ModulateApp() {
               <div className="mt-6 grid gap-3">
                 {episodes.map((episode) => (
                   <article
-                    className="rounded-lg border border-slate-200 bg-white p-4"
+                    className="rounded-xs border border-slate-200/90 bg-gradient-to-br from-white to-mist-50/75 p-4"
                     key={episode.id}
                   >
                     <div className="flex items-start justify-between gap-4">
@@ -178,7 +176,7 @@ export function ModulateApp() {
                           {episode.source} · {episode.length} · /e/{episode.id}
                         </p>
                       </div>
-                      <CheckCircleIcon className="size-6 text-sky-700" weight="fill" />
+                      <CheckCircleIcon className="size-6 text-mist-700" weight="fill" />
                     </div>
                     <div className="mt-4 flex flex-wrap gap-2">
                       <Link className="secondary-button" href={`/e/${episode.id}`}>

@@ -13,6 +13,16 @@
   --font-heading: "Zalando Sans Expanded", "Zalando Sans Expanded Fallback",
     ui-sans-serif, system-ui, sans-serif;
   --font-mono: "Geist Mono", "Geist Mono Fallback", ui-monospace, monospace;
+  --color-mist-50: #f7fafc;
+  --color-mist-100: #edf4f8;
+  --color-mist-200: #dce8ef;
+  --color-mist-300: #c3d6e2;
+  --color-mist-400: #9db8c9;
+  --color-mist-500: #7899ae;
+  --color-mist-600: #5c7a91;
+  --color-mist-700: #455e73;
+  --color-mist-800: #2f4356;
+  --color-mist-900: #1b2a39;
 }
 
 * {
@@ -55,56 +65,118 @@ button:disabled {
 }
 
 .primary-button {
+  --glow-x: 50%;
+  --glow-y: 50%;
+  --glow-alpha: 0;
+  position: relative;
+  overflow: hidden;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  border-radius: 0.375rem;
-  background: #0369a1;
+  border: 1px solid rgb(92 122 145 / 0.46);
+  border-radius: 0.125rem;
+  background:
+    radial-gradient(
+      circle at var(--glow-x) var(--glow-y),
+      rgb(255 255 255 / var(--glow-alpha)),
+      transparent 4.5rem
+    ),
+    linear-gradient(135deg, #7899ae 0%, #5c7a91 48%, #2f4356 100%);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.22),
+    0 10px 28px rgb(47 67 86 / 0.14);
   padding: 0.75rem 1rem;
   font-size: 0.875rem;
   font-weight: 800;
   color: white;
-  transition: background 140ms ease, transform 140ms ease;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    filter 160ms ease,
+    --glow-alpha 160ms ease,
+    transform 160ms ease;
 }
 
 .primary-button:hover {
-  background: #075985;
+  --glow-alpha: 0.36;
+  border-color: rgb(157 184 201 / 0.9);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.3),
+    0 14px 34px rgb(47 67 86 / 0.2);
+  filter: saturate(1.08);
+  transform: translateY(-1px);
 }
 
 .primary-button:disabled {
-  background: #cbd5e1;
+  border-color: rgb(203 213 225 / 0.75);
+  background: linear-gradient(135deg, #dce8ef, #c3d6e2);
+  box-shadow: none;
+  --glow-alpha: 0;
+  transform: none;
 }
 
 .secondary-button {
+  position: relative;
+  overflow: hidden;
   display: inline-flex;
   min-height: 2.5rem;
   align-items: center;
   justify-content: center;
   gap: 0.4rem;
-  border: 1px solid #cbd5e1;
-  border-radius: 0.375rem;
-  background: white;
+  border: 1px solid rgb(148 163 184 / 0.48);
+  border-radius: 0.125rem;
+  background: linear-gradient(180deg, rgb(255 255 255 / 0.96), rgb(248 250 252 / 0.9));
   padding: 0.5rem 0.75rem;
   font-size: 0.875rem;
   font-weight: 800;
   color: #334155;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    color 160ms ease,
+    transform 160ms ease;
+}
+
+.secondary-button:hover {
+  border-color: rgb(92 122 145 / 0.65);
+  box-shadow: 0 8px 22px rgb(15 23 42 / 0.06);
+  color: #2f4356;
+  transform: translateY(-1px);
 }
 
 .choice {
+  position: relative;
+  overflow: hidden;
   display: flex;
   min-height: 6.5rem;
   gap: 0.75rem;
-  border: 1px solid #cbd5e1;
-  border-radius: 0.5rem;
-  background: white;
+  border: 1px solid rgb(148 163 184 / 0.45);
+  border-radius: 0.125rem;
+  background:
+    linear-gradient(135deg, rgb(255 255 255 / 0.98), rgb(248 250 252 / 0.88)),
+    linear-gradient(135deg, rgb(92 122 145 / 0.08), rgb(220 232 239 / 0.18));
   padding: 1rem;
   text-align: left;
   color: #0f172a;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+.choice:hover {
+  border-color: rgb(92 122 145 / 0.58);
+  box-shadow: 0 10px 28px rgb(15 23 42 / 0.055);
+  transform: translateY(-1px);
 }
 
 .choice-active {
-  border-color: #0284c7;
-  background: #f0f9ff;
-  box-shadow: inset 0 0 0 1px #0284c7;
+  border-color: rgb(92 122 145 / 0.9);
+  background:
+    linear-gradient(135deg, rgb(247 250 252 / 0.98), rgb(220 232 239 / 0.62)),
+    white;
+  box-shadow:
+    inset 0 0 0 1px rgb(92 122 145 / 0.35),
+    0 10px 28px rgb(47 67 86 / 0.1);
 }

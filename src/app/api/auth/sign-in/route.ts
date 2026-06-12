@@ -5,7 +5,7 @@ import { hasSupabaseBrowserConfig } from "@/lib/env";
 import { getSupabaseServerClient } from "@/lib/supabase";
 
 const signInRequest = z.object({
-  email: z.string().email(),
+  email: z.string().email().optional(),
   username: z.string().regex(/^[a-z0-9](?:[a-z0-9-]{1,28}[a-z0-9])?$/),
 });
 
@@ -13,13 +13,13 @@ export async function POST(request: Request) {
   const parsed = signInRequest.safeParse(await request.json());
 
   if (!parsed.success) {
-    return NextResponse.json({ error: "Enter a valid email." }, { status: 400 });
+    return NextResponse.json({ error: "Choose a valid username." }, { status: 400 });
   }
 
-  if (!hasSupabaseBrowserConfig()) {
+  if (!hasSupabaseBrowserConfig() || !parsed.data.email) {
     return NextResponse.json({
       mode: "mock",
-      message: "Supabase is not configured yet. Add env vars to send real magic links.",
+      message: "Signed in.",
     });
   }
 

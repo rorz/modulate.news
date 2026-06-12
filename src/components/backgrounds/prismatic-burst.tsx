@@ -56,9 +56,9 @@ vec3 rayDir(vec2 frag, vec2 res) {
 float edgeFade(vec2 frag, vec2 res) {
   vec2 toC = frag - 0.5 * res;
   float r = length(toC) / (0.5 * min(res.x, res.y));
-  float x = clamp(r, 0.0, 1.0);
-  float q = x * x * x * (x * (x * 6.0 - 15.0) + 10.0);
-  return clamp(pow(q * 0.5, 1.35), 0.0, 1.0);
+  float x = smoothstep(0.48, 1.16, r);
+  float q = x * x * (3.0 - 2.0 * x);
+  return clamp(pow(q, 1.52), 0.0, 1.0);
 }
 
 mat3 rotX(float a) {
@@ -117,20 +117,20 @@ void main() {
     Pb.xy = rot2(Pb.xy, a2);
 
     float rayPattern = smoothstep(
-      0.5, 0.7,
+      0.35, 0.62,
       sin(Pb.x + cos(Pb.y) * cos(Pb.z)) *
       sin(Pb.z + sin(Pb.y) * cos(Pb.x + t))
     );
 
     if (uRayCount > 0) {
       float ang = atan(Pb.y, Pb.x);
-      float comb = pow(0.5 + 0.5 * cos(float(uRayCount) * ang), 3.0);
-      rayPattern *= smoothstep(0.15, 0.95, comb);
+      float comb = pow(0.5 + 0.5 * cos(float(uRayCount) * ang), 1.75);
+      rayPattern *= smoothstep(0.08, 0.9, comb);
     }
 
     float saw = fract(marchT * 0.25);
     float tRay = saw * saw * (3.0 - 2.0 * saw);
-    vec3 spectral = 1.85 * sampleGradient(tRay);
+    vec3 spectral = 1.55 * sampleGradient(tRay);
     vec3 base = (0.05 / (0.4 + stepLen)) * smoothstep(5.0, 0.0, rad) * spectral;
     col += base * rayPattern;
     marchT += stepLen;
@@ -139,7 +139,7 @@ void main() {
   col *= edgeFade(frag, uResolution);
   col *= uIntensity;
   col = clamp(col, 0.0, 1.0);
-  float alpha = clamp(max(max(col.r, col.g), col.b) * 1.35, 0.0, 0.92);
+  float alpha = clamp(max(max(col.r, col.g), col.b) * 0.86, 0.0, 0.56);
   fragColor = vec4(col, alpha);
 }`;
 
@@ -167,13 +167,13 @@ export function PrismaticBurstBackground() {
       uniforms: {
         uResolution: { value: [1, 1] },
         uTime: { value: 0 },
-        uIntensity: { value: 1.28 },
+        uIntensity: { value: 0.9 },
         uSpeed: { value: 0.16 },
         uMouse: { value: [0.5, 0.5] },
         uGradient: { value: gradient },
         uColorCount: { value: colors.length },
-        uDistort: { value: 0.48 },
-        uRayCount: { value: 18 },
+        uDistort: { value: 0.36 },
+        uRayCount: { value: 14 },
       },
     });
     const mesh = new Mesh(gl, { geometry: new Triangle(gl), program });

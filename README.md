@@ -13,8 +13,12 @@ bun install
 cp .env.example .env.local
 ```
 
-Fill the Supabase and ElevenLabs values in `.env.local`. Keep `.env.local`
-private.
+The prototype runs without credentials. On the splash screen, choose a username
+and click **Sign up or Log in**. Until Supabase is configured, auth runs in mock
+mode and keeps you moving locally.
+
+Fill the Supabase and ElevenLabs values in `.env.local` when you want real auth,
+episode persistence, and generation. Keep `.env.local` private.
 
 ## Scripts
 
@@ -23,6 +27,8 @@ bun run dev
 bun run check
 ```
 
+Open `http://localhost:3000`.
+
 `bun run check` runs TypeScript, ESLint, Knip, Bun tests, pokayoke, and a
 production Next build.
 
@@ -30,6 +36,16 @@ production Next build.
 
 The initial schema lives in `supabase/migrations`. Episodes are public-readable
 and authenticated users can create drafts.
+
+For a real local Supabase flow:
+
+```sh
+supabase start
+supabase db reset
+```
+
+Then copy the local API URL and anon key into `.env.local` as
+`NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
 
 ## ElevenLabs
 

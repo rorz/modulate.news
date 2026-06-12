@@ -70,7 +70,7 @@ export function EpisodeCreator(props: {
           })}
         </div>
         <input
-          className="mt-3 h-12 w-full rounded-md border border-slate-300 bg-white px-3 text-base outline-none focus:border-sky-600"
+          className="mt-3 h-12 w-full rounded-xs border border-slate-300/80 bg-gradient-to-br from-white to-mist-50/80 px-3 text-base outline-none transition focus:border-mist-500/80 focus:shadow-[0_0_0_3px_rgb(92_122_145_/_0.10)]"
           disabled={props.source.id !== "url"}
           onChange={(event) => props.setInputUrl(event.target.value)}
           placeholder="https://..."
@@ -142,13 +142,13 @@ function SpeakerPicker({
   onSelect: (host: HostProfile) => void;
 }) {
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-4">
+    <div className="rounded-xs border border-slate-200/90 bg-gradient-to-br from-white to-mist-50/80 p-4">
       <div className="flex items-center justify-between">
         <p className="text-sm font-semibold uppercase text-slate-500">{label}</p>
-        <MicrophoneStageIcon className="size-5 text-sky-700" aria-hidden="true" />
+        <MicrophoneStageIcon className="size-5 text-mist-700" aria-hidden="true" />
       </div>
       <select
-        className="mt-3 h-12 w-full rounded-md border border-slate-300 bg-white px-3 outline-none focus:border-sky-600"
+        className="mt-3 h-12 w-full rounded-xs border border-slate-300/80 bg-gradient-to-br from-white to-mist-50/80 px-3 outline-none transition focus:border-mist-500/80 focus:shadow-[0_0_0_3px_rgb(92_122_145_/_0.10)]"
         onChange={(event) => {
           const next = hostProfiles.find((profile) => profile.id === event.target.value);
           if (next) onSelect(next);
