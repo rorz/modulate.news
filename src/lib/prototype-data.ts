@@ -1,97 +1,133 @@
 import {
-  CalendarDays,
-  Hash,
-  Headphones,
-  MessageSquareText,
-  Newspaper,
-  RadioTower,
-  Sparkles,
-  Users,
-  type LucideIcon,
-} from "lucide-react";
+  CalendarDotsIcon,
+  LinkSimpleIcon,
+  MusicNotesIcon,
+  NewspaperIcon,
+  SlackLogoIcon,
+  SparkleIcon,
+  type Icon,
+} from "@phosphor-icons/react";
 
 export type Source = {
-  id: string;
+  id: "slack" | "hacker-news" | "luma" | "url";
   name: string;
-  icon: LucideIcon;
-  signal: string;
+  action: string;
+  icon: Icon;
   detail: string;
 };
 
 export type HostProfile = {
   id: string;
   label: string;
-  tone: string;
+  accent: string;
+  sample: string;
+  rate: number;
+  pitch: number;
+};
+
+export type MusicVibe = {
+  id: string;
+  label: string;
+  prompt: string;
+  icon: Icon;
+};
+
+export type LengthCap = {
+  id: "bullet" | "brief" | "story";
+  label: string;
+  cap: string;
+  seconds: number;
 };
 
 export const sources = [
   {
     id: "slack",
     name: "Slack",
-    icon: Hash,
-    signal: "team pulse",
-    detail: "Unread channels, decisions, blockers, and launch chatter.",
+    action: "Link Slack",
+    icon: SlackLogoIcon,
+    detail: "Decisions, asks, launches, blockers, and unread team pulse.",
   },
   {
     id: "hacker-news",
     name: "Hacker News",
-    icon: Newspaper,
-    signal: "story radar",
-    detail: "Top threads, fast-rising links, and founder-grade commentary.",
+    action: "Use HN",
+    icon: NewspaperIcon,
+    detail: "Top stories, rising threads, and the useful argument underneath.",
   },
   {
     id: "luma",
     name: "Luma",
-    icon: CalendarDays,
-    signal: "event intel",
-    detail: "Upcoming rooms, guest overlap, and people worth finding.",
+    action: "Link Luma",
+    icon: CalendarDotsIcon,
+    detail: "Upcoming events, guest overlap, and who to meet in the room.",
   },
   {
-    id: "paste",
-    name: "Anything",
-    icon: MessageSquareText,
-    signal: "raw input",
-    detail: "Paste URLs, notes, transcripts, research, or a whole brief.",
+    id: "url",
+    name: "URL",
+    action: "Use URL",
+    icon: LinkSimpleIcon,
+    detail: "Paste any link and turn the page into a tight audio episode.",
   },
 ] as const satisfies readonly Source[];
 
 export const hostProfiles = [
-  { id: "uk", label: "British", tone: "dry, sharp, composed" },
-  { id: "us", label: "American", tone: "direct, energetic, warm" },
-  { id: "ie", label: "Irish", tone: "wry, lyrical, humane" },
-  { id: "au", label: "Australian", tone: "bright, plain-spoken, quick" },
+  {
+    id: "uk",
+    label: "Mara",
+    accent: "British",
+    sample: "This is Modulate. Here is the useful bit, without the noise.",
+    rate: 0.94,
+    pitch: 0.96,
+  },
+  {
+    id: "us",
+    label: "Noah",
+    accent: "American",
+    sample: "You have three things worth knowing, and one decision to make.",
+    rate: 1,
+    pitch: 1,
+  },
+  {
+    id: "ie",
+    label: "Eoin",
+    accent: "Irish",
+    sample: "A quick sweep through the signal, then we will call the play.",
+    rate: 0.92,
+    pitch: 1.03,
+  },
+  {
+    id: "au",
+    label: "Billie",
+    accent: "Australian",
+    sample: "Short version first, then the wrinkle that matters.",
+    rate: 1.03,
+    pitch: 1.02,
+  },
 ] as const satisfies readonly HostProfile[];
 
-export const episodes = [
+export const musicVibes = [
   {
-    title: "Launch Radar",
-    status: "ready",
-    length: "07:42",
-    source: "Slack",
-    date: "Today",
-    summary: "Three product decisions, one support risk, two shipped fixes.",
+    id: "mist",
+    label: "Morning Mist",
+    prompt: "quiet, glassy, optimistic, restrained",
+    icon: SparkleIcon,
   },
   {
-    title: "HN Founder Sweep",
-    status: "draft",
-    length: "09:10",
-    source: "Hacker News",
-    date: "Yesterday",
-    summary: "Agents, browser automation, edge databases, and pricing drama.",
+    id: "steel",
+    label: "Steel FM",
+    prompt: "clean synth pulse, editorial, precise",
+    icon: MusicNotesIcon,
   },
   {
-    title: "Luma Week Ahead",
-    status: "queued",
-    length: "05:30",
-    source: "Luma",
-    date: "Mon",
-    summary: "Two AI events, one investor salon, seven useful intros.",
+    id: "blue",
+    label: "Blue Hour",
+    prompt: "cool ambient bed, intimate, late evening",
+    icon: SparkleIcon,
   },
-] as const;
+] as const satisfies readonly MusicVibe[];
 
-export const pipeline = [
-  { label: "Connect", icon: RadioTower },
-  { label: "Summarize", icon: Sparkles },
-  { label: "Cast", icon: Users },
-  { label: "Publish", icon: Headphones },
-] as const;
+export const lengthCaps = [
+  { id: "bullet", label: "Bullet", cap: "1 min", seconds: 60 },
+  { id: "brief", label: "Brief", cap: "3 min", seconds: 180 },
+  { id: "story", label: "Story", cap: "5 min", seconds: 300 },
+] as const satisfies readonly LengthCap[];

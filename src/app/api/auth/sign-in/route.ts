@@ -6,6 +6,7 @@ import { getSupabaseServerClient } from "@/lib/supabase";
 
 const signInRequest = z.object({
   email: z.string().email(),
+  username: z.string().regex(/^[a-z0-9](?:[a-z0-9-]{1,28}[a-z0-9])?$/),
 });
 
 export async function POST(request: Request) {
