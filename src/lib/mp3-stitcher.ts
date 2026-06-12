@@ -3,7 +3,6 @@ import { existsSync } from "node:fs";
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import ffmpegInstaller from "@ffmpeg-installer/ffmpeg";
 import ffmpegPath from "ffmpeg-static";
 
 export async function stitchMp3Clips(clips: Buffer[]) {
@@ -57,7 +56,7 @@ export async function stitchMp3Clips(clips: Buffer[]) {
 function resolveFfmpegPath() {
   const candidates = [
     process.env.FFMPEG_BIN,
-    ffmpegInstaller.path,
+    installerBinaryPath(),
     ffmpegPath,
     "/opt/homebrew/bin/ffmpeg",
     "/usr/local/bin/ffmpeg",
@@ -65,6 +64,25 @@ function resolveFfmpegPath() {
   ].filter((candidate): candidate is string => Boolean(candidate));
 
   return candidates.find((candidate) => existsSync(candidate)) ?? null;
+}
+
+function installerBinaryPath() {
+  const platform = process.platform;
+  const arch = process.arch;
+  const packageName =
+    platform === "linux" && arch === "x64"
+      ? "linux-x64"
+      : platform === "linux" && arch === "arm64"
+        ? "linux-arm64"
+        : platform === "darwin" && arch === "arm64"
+          ? "darwin-arm64"
+          : platform === "darwin" && arch === "x64"
+            ? "darwin-x64"
+            : "";
+
+  return packageName
+    ? join(process.cwd(), "node_modules", "@ffmpeg-installer", packageName, "ffmpeg")
+    : null;
 }
 
 function runFfmpeg(ffmpeg: string, args: string[]) {

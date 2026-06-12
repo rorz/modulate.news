@@ -9,7 +9,6 @@ import {
   PlusIcon,
   RadioIcon,
   SpinnerGapIcon,
-  WarningCircleIcon,
 } from "@phosphor-icons/react";
 import Link from "next/link";
 import { useRef, useState } from "react";
@@ -75,17 +74,6 @@ export function EpisodesScreen({
             Create
           </button>
         ) : null}
-      </div>
-
-      <div className="mt-6 flex gap-3 rounded-xs border border-amber-300/80 bg-amber-50 p-4 text-amber-950 shadow-sm">
-        <WarningCircleIcon className="mt-0.5 size-5 flex-shrink-0 text-amber-700" weight="fill" />
-        <div>
-          <p className="font-heading text-sm font-black">Production audio rendering notice</p>
-          <p className="mt-1 text-sm leading-6">
-            We are experiencing ffmpeg issues in production. Audio generation works locally; this
-            is a hackathon build.
-          </p>
-        </div>
       </div>
 
       {loading ? (
